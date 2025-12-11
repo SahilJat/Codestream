@@ -8,10 +8,10 @@
     "db:push": "prisma db push"
   },
   "dependencies": {
-    "@prisma/client": "5.19.1"
+    "@prisma/client": "^5.x.x"
   },
   "devDependencies": {
-    "prisma": "5.19.1",
-    "typescript": "^5.0.0"
+    "prisma": "^5.x.x",
+    "typescript": "^5.x.x"
   }
 }
