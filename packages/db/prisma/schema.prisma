@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  image         String?
+  createdAt     DateTime  @default(now())
+  
+  // Relations
+  interviewSessions InterviewSession[] @relation("Interviewer")
+  candidateSessions InterviewSession[] @relation("Candidate")
+}
+
+model InterviewSession {
+  id          String   @id @default(uuid())
+  roomId      String   @unique // The URL slug (e.g., abc-123-xyz)
+  createdAt   DateTime @default(now())
+  status      String   @default("active") // active, completed
+  
+  // Participants
+  interviewerId String
+  interviewer   User   @relation("Interviewer", fields: [interviewerId], references: [id])
+  
+  candidateId   String?
+  candidate     User?  @relation("Candidate", fields: [candidateId], references: [id])
+
+  // Data
+  codeContent   String?  // Final code state
+  language      String   @default("javascript")
+}
