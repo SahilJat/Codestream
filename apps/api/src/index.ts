@@ -2,12 +2,12 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-
-
+import { PeerServer } from "peer";
+import { executeCode } from "./execute";
 
 const app = express();
 app.use(cors());
-
+app.use(express.json());
 
 
 const httpServer = createServer(app);
@@ -17,12 +17,13 @@ const io = new Server(httpServer, {
     methods: ["GET", "POST"]
   }
 });
-
+const peerServer = PeerServer({ port: 9000, path: "/myapp" });
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
-  socket.on("join-room", (roomId) => {
+  socket.on("join-room", (roomId, userId) => {
     socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`);
+    console.log(`User ${userId} joined room ${roomId}`);
+    socket.to(roomId).emit("user-connected", userId);
   });
 
   //share code with everyone in room
@@ -35,6 +36,21 @@ io.on("connection", (socket) => {
 
 
 });
+app.post("/execute", async (req, res) => {
+  const { code, language } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ error: "Code is required" });
+  }
+
+  try {
+    const output = await executeCode(language || "javascript", code);
+    res.json({ output });
+  } catch (error) {
+    res.status(500).json({ error: "Execution failed" });
+  }
+});
+console.log("PeerServer running on port 9000");
 
 const PORT = process.env.PORT || 4000;
 
