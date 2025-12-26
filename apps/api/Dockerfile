@@ -44,8 +44,4 @@ COPY --from=installer /app .
 
 WORKDIR /app/apps/api
 
-CMD ["npm", "run", "dev"] 
-# Ideally should be "start" but api/package.json only has "dev" currently. 
-# We will fix this by assuming the user will use "node dist/index.js" or similar if they add a start script.
-# For now, let's stick to the existing script or run node directly.
 CMD ["node", "dist/index.js"]
