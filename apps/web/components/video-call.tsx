@@ -55,7 +55,9 @@ export default function VideoCall({ roomId, socket, myUserId, userName }: VideoC
     const config = getPeerConfig();
     console.log("Peer Config:", config);
 
-    const peer = new Peer(undefined, config);
+    // Fix: Pass config as the only argument. 
+    // PeerJS overloads allow 'new Peer(options)' for auto-generated IDs.
+    const peer = new Peer(config);
     peerInstance.current = peer;
 
     peer.on("open", (id) => {
