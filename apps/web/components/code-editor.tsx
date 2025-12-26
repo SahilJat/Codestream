@@ -7,40 +7,40 @@ import { Play, Loader2, Terminal } from "lucide-react"; // Icons for UI
 
 interface CodeEditorProps {
   roomId: string;
+  socket: Socket;
 }
 
-export default function CodeEditor({ roomId }: CodeEditorProps) {
+export default function CodeEditor({ roomId, socket }: CodeEditorProps) {
   // --- State Management ---
   const [code, setCode] = useState("// Start coding here...\nconsole.log('Hello World!');");
   const [output, setOutput] = useState<string[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-
-  // --- Refs ---
-  const socketRef = useRef<Socket | null>(null);
 
   // Flag to prevent infinite loops (Server -> Client -> Server)
   const isRemoteUpdate = useRef(false);
 
   // --- 1. Socket Connection Logic ---
   useEffect(() => {
-    // Connect to Backend
-    socketRef.current = io("http://localhost:4000");
+    if (!socket) return;
 
-    // Join the specific room
-    socketRef.current.emit("join-room", roomId);
-
+    // Join the specific room (Note: Parent might have already joined, but code-editor specific logic goes here)
+    // Actually, joining room is handled by parent/video-call for presence. 
+    // But for code sync, we just need to listen/emit.
+    
     // Listen for updates from other users
-    socketRef.current.on("code-update", (newCode: string) => {
+    const handleCodeUpdate = (newCode: string) => {
       console.log("Remote update received");
       isRemoteUpdate.current = true; // Mark as remote
       setCode(newCode);
-    });
-
-    // Cleanup on unmount
-    return () => {
-      socketRef.current?.disconnect();
     };
-  }, [roomId]);
+
+    socket.on("code-update", handleCodeUpdate);
+
+    // Cleanup listener on unmount
+    return () => {
+      socket.off("code-update", handleCodeUpdate);
+    };
+  }, [socket]);
 
   // --- 2. Local Editor Change Handler ---
   function handleEditorChange(value: string | undefined) {
@@ -53,7 +53,7 @@ export default function CodeEditor({ roomId }: CodeEditorProps) {
     if (value !== undefined) {
       setCode(value);
       // Emit changes to other users
-      socketRef.current?.emit("code-change", { roomId, code: value });
+      socket.emit("code-change", { roomId, code: value });
     }
   }
 
@@ -63,7 +63,8 @@ export default function CodeEditor({ roomId }: CodeEditorProps) {
     setOutput([]); // Clear previous output
 
     try {
-      const response = await fetch("http://localhost:4000/execute", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiUrl}/execute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, language: "javascript" }),

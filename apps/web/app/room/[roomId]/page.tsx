@@ -8,7 +8,9 @@ import { useParams } from "next/navigation";
 import { Copy, Check } from "lucide-react";
 
 // Initialize socket outside to prevent re-connections
-const socket = io(process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000");
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+console.log("🔌 Connecting to Socket.io Server at:", API_URL);
+const socket = io(API_URL);
 
 export default function InterviewPage() {
   const params = useParams();
@@ -92,7 +94,7 @@ export default function InterviewPage() {
       {/* Main Layout */}
       <main className="flex-1 flex min-h-0">
         <div className="flex-1 border-r border-zinc-800 p-4 relative overflow-auto custom-scrollbar">
-          <CodeEditor roomId={roomId} />
+          <CodeEditor roomId={roomId} socket={socket} />
         </div>
         <div className="w-[400px] bg-zinc-950 border-l border-zinc-800 relative flex flex-col shrink-0">
           <VideoCall roomId={roomId} socket={socket} myUserId={userId} userName={userName} />
