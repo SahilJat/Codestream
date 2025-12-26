@@ -2,22 +2,35 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-import { PeerServer } from "peer";
+import { ExpressPeerServer } from "peer";
 import { executeCode } from "./execute";
-
+import { createClient } from "redis";
+import { createAdapter } from "@socket.io/redis-adapter";
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+const peerServer = ExpressPeerServer(httpServer, {
+  path: "/myapp"
 });
-const peerServer = PeerServer({ port: 9000, path: "/myapp" });
+
+app.use("/peerjs", peerServer)
+const pubClient = createClient({ url: "redis://localhost:6379" });
+const subClient = pubClient.duplicate();
+pubClient.on("error", (err) => console.error("Redis Pub Error:", err));
+subClient.on("error", (err) => console.error("Redis Sub Error:", err));
+Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+  console.log("✅ Redis Connected");
+  // Only attach adapter if Redis is ready
+  io.adapter(createAdapter(pubClient, subClient));
+})
+  .catch((err) => console.error("❌ Redis Error (App will run without it):", err));
+const io = new Server(httpServer, {
+  cors: { origin: "*", methods: ["GET", "POST"] },
+  // 👇 TELL SOCKET.IO TO USE REDIS
+});
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
   socket.on("join-room", (roomId, userId) => {
@@ -58,3 +71,4 @@ const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
   console.log(`sever is running on port ${PORT}`);
 });
+
