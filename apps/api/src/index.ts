@@ -17,7 +17,13 @@ const peerServer = ExpressPeerServer(httpServer, {
 });
 
 app.use("/peerjs", peerServer)
-const pubClient = createClient({ url: process.env.REDIS_URL || "redis://localhost:6379" });
+const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const isTls = redisUrl.startsWith("rediss://");
+
+const pubClient = createClient({ 
+  url: redisUrl,
+  socket: isTls ? { tls: true, rejectUnauthorized: false } : {}
+});
 const subClient = pubClient.duplicate();
 pubClient.on("error", (err) => console.error("Redis Pub Error:", err));
 subClient.on("error", (err) => console.error("Redis Sub Error:", err));
