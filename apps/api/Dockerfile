@@ -1,47 +1,30 @@
 FROM node:18-alpine AS base
-
-# The API needs access to the Docker daemon to spawn sibling containers
-# We install the docker CLI client in this image.
-RUN apk add --no-cache docker-cli
-
-FROM base AS builder
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
-# Set working directory
+RUN apk add --no-cache libc6-compat docker-cli
 WORKDIR /app
 # Install turbo global
 RUN npm install -g turbo
+
+FROM base AS builder
 COPY . .
 # Prune the workspace to just the 'api' app
 RUN turbo prune --scope=api --docker
 
-# Add lockfile and package.json's of isolated subworkspace
 FROM base AS installer
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
-
-# First install dependencies (as they change less often)
-COPY .gitignore .gitignore
+# First install dependencies
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/package-lock.json ./package-lock.json
-RUN npm install
-
-# Build the project and its dependencies
-COPY --from=builder /app/out/full/ .
-COPY turbo.json turbo.json
+# CI installs are cleaner and faster
+RUN npm ci
 
 # Build the project
+COPY --from=builder /app/out/full/ .
+COPY turbo.json turbo.json
 RUN npx turbo run build --filter=api...
 
 FROM base AS runner
 WORKDIR /app
-
-# Don't run production as root (Recommended, BUT we need root for Docker socket access usually)
-# For simplicity in this specific "Code Execution" use case, we might need root or specific group permissions.
-# We will stick to root for now to ensure access to /var/run/docker.sock
-
+# Only copy the built artifacts and node_modules
 COPY --from=installer /app .
-
 WORKDIR /app/apps/api
-
 CMD ["node", "dist/index.js"]
