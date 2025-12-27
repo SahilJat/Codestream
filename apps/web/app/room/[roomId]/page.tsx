@@ -10,12 +10,13 @@ import { Copy, Check } from "lucide-react";
 // Initialize socket outside to prevent re-connections
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 console.log("🔌 Connecting to Socket.io Server at:", API_URL);
-const socket = io(API_URL);
+// ✅ New Working URL
+const socket = io("https://13.232.9.23.sslip.io");
 
 export default function InterviewPage() {
   const params = useParams();
   const roomId = params.roomId as string;
-  
+
   const [userId, setUserId] = useState<string>("");
   const [userName, setUserName] = useState<string>("");
   const [hasJoined, setHasJoined] = useState(false);
