@@ -8,7 +8,10 @@ import { executeCode } from "./execute";
 import { createClient } from "redis";
 import { createAdapter } from "@socket.io/redis-adapter";
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(express.json());
 
 
@@ -35,7 +38,14 @@ Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
 })
   .catch((err) => console.error("❌ Redis Error (App will run without it):", err));
 const io = new Server(httpServer, {
-  cors: { origin: "*", methods: ["GET", "POST"] },
+  cors: {
+    origin: (origin, callback) => {
+      // Allow any origin
+      callback(null, true);
+    },
+    methods: ["GET", "POST"],
+    credentials: true
+  },
   // 👇 TELL SOCKET.IO TO USE REDIS
 });
 io.on("connection", (socket) => {
