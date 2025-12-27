@@ -1,52 +1,40 @@
-import { exec } from "child_process";
-import fs from "fs";
-import path from "path";
-import { promisify } from "util";
+import { spawn } from "child_process";
 
-const execPromise = promisify(exec);
+export function executeCode(language: string, code: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // We only support javascript for now, using the node image
+    const dockerArgs = ["run", "--rm", "-i", "node:18-alpine", "node"];
 
-export async function executeCode(language: string, code: string): Promise<string> {
-  // 1. Create a unique file for this run to avoid collisions
-  const jobId = `job-${Date.now()}`;
-  const filename = `${jobId}.js`; // We support JS for now
-  const tempDir = path.join(__dirname, "../temp");
-  const filePath = path.join(tempDir, filename);
+    const child = spawn("docker", dockerArgs);
 
-  // Ensure temp dir exists
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir);
-  }
+    let stdout = "";
+    let stderr = "";
 
-  try {
-    // 2. Write the user's code to a file
-    await fs.promises.writeFile(filePath, code);
+    // Send code to stdin
+    child.stdin.write(code);
+    child.stdin.end();
 
-    console.log(`Executing job ${jobId}...`);
+    child.stdout.on("data", (data) => {
+      stdout += data.toString();
+    });
 
-    // 3. THE MAGIC: Run inside Docker
-    // --rm: Remove container after run
-    // -v: Mount the file into the container
-    // node:18-alpine: Lightweight Node image
-    // timeout 5s: Kill if it runs too long (Infinite loop protection)
+    child.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
 
-    // NOTE: On Windows/Mac, mounting volumes can be tricky with paths.
-    // We mount the specific file to /app/test.js inside the container.
+    child.on("error", (error) => {
+      console.error("Execution Spawn Error:", error);
+      reject(error.message);
+    });
 
-    const dockerCommand = `docker run --rm -v "${filePath}":/app/test.js node:18-alpine node /app/test.js`;
-
-    // 4. Execute
-    const { stdout, stderr } = await execPromise(dockerCommand);
-
-    // Cleanup
-    await fs.promises.unlink(filePath);
-
-    return stdout || stderr;
-
-  } catch (error: any) {
-    // Cleanup on error
-    if (fs.existsSync(filePath)) await fs.promises.unlink(filePath);
-
-    console.error("Execution Error:", error);
-    return error.stderr || error.message;
-  }
+    child.on("close", (code) => {
+      if (code !== 0) {
+        // If the process failed, we still want to return the stderr as "output"
+        // for the user to see (e.g., syntax errors)
+        resolve(stderr || "Unknown execution error");
+      } else {
+        resolve(stdout);
+      }
+    });
+  });
 }
