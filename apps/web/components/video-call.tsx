@@ -219,23 +219,23 @@ export default function VideoCall({ roomId, socket, myUserId, userName }: VideoC
       </div>
 
       {/* SELF VIDEO */}
-      <div className="absolute top-4 right-4 w-32 aspect-[3/4] bg-black rounded-xl overflow-hidden border border-zinc-700 shadow-2xl z-20 hover:scale-105 transition-transform duration-300">
+      <div className="absolute top-2 right-2 md:top-4 md:right-4 w-16 md:w-32 aspect-[3/4] bg-black rounded-xl overflow-hidden border border-zinc-700 shadow-2xl z-20 hover:scale-105 transition-transform duration-300">
         <video ref={myVideoRef} autoPlay muted className={`w-full h-full object-cover ${isVideoOff ? 'opacity-0' : 'opacity-100'}`} />
-        <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] text-white font-medium backdrop-blur-md">YOU</div>
+        <div className="absolute bottom-1 left-1 md:bottom-2 md:left-2 bg-black/60 px-1 py-0.5 md:px-2 md:py-0.5 rounded text-[8px] md:text-[10px] text-white font-medium backdrop-blur-md">YOU</div>
       </div>
 
       {/* CONTROLS */}
-      <div className="absolute bottom-6 left-0 right-0 z-50 flex justify-center">
-        <div className="flex items-center gap-4 px-6 py-3 bg-zinc-950/90 backdrop-blur-xl border border-zinc-800 rounded-full shadow-2xl">
-          <button onClick={toggleMute} className={`p-3.5 rounded-full transition-all ${isMuted ? "bg-red-500/20 text-red-500" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"}`}>
-            {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+      <div className="absolute bottom-2 left-0 right-0 z-50 flex justify-center md:bottom-6">
+        <div className="flex items-center gap-2 md:gap-4 px-3 py-2 md:px-6 md:py-3 bg-zinc-950/90 backdrop-blur-xl border border-zinc-800 rounded-full shadow-2xl">
+          <button onClick={toggleMute} className={`p-2 md:p-3.5 rounded-full transition-all ${isMuted ? "bg-red-500/20 text-red-500" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"}`}>
+            {isMuted ? <MicOff className="w-3 h-3 md:w-5 md:h-5" /> : <Mic className="w-3 h-3 md:w-5 md:h-5" />}
           </button>
-          <button onClick={toggleVideo} className={`p-3.5 rounded-full transition-all ${isVideoOff ? "bg-red-500/20 text-red-500" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"}`}>
-            {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+          <button onClick={toggleVideo} className={`p-2 md:p-3.5 rounded-full transition-all ${isVideoOff ? "bg-red-500/20 text-red-500" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"}`}>
+            {isVideoOff ? <VideoOff className="w-3 h-3 md:w-5 md:h-5" /> : <Video className="w-3 h-3 md:w-5 md:h-5" />}
           </button>
-          <div className="w-[1px] h-8 bg-zinc-800 mx-1"></div>
-          <button onClick={endCall} className="p-3.5 rounded-full bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20">
-            <PhoneOff className="w-5 h-5" />
+          <div className="w-[1px] h-4 mx-0.5 md:h-8 md:mx-1 bg-zinc-800"></div>
+          <button onClick={endCall} className="p-2 md:p-3.5 rounded-full bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20">
+            <PhoneOff className="w-3 h-3 md:w-5 md:h-5" />
           </button>
         </div>
       </div>

@@ -93,11 +93,16 @@ export default function InterviewPage() {
       </header>
 
       {/* Main Layout */}
-      <main className="flex-1 flex min-h-0">
-        <div className="flex-1 border-r border-zinc-800 p-4 relative overflow-auto custom-scrollbar">
+      <main className="flex-1 flex min-h-0 relative">
+        <div className="flex-1 border-r border-zinc-800 p-4 relative overflow-auto custom-scrollbar w-full">
           <CodeEditor roomId={roomId} socket={socket} />
         </div>
-        <div className="w-[400px] bg-zinc-950 border-l border-zinc-800 relative flex flex-col shrink-0">
+        
+        {/* Video Call Container - Responsive */}
+        <div className="
+          fixed bottom-4 right-4 z-50 w-48 h-72 rounded-xl overflow-hidden border border-zinc-700 shadow-2xl bg-zinc-950
+          md:relative md:inset-auto md:w-[400px] md:h-auto md:border-l md:border-t-0 md:rounded-none md:shadow-none md:flex md:flex-col md:shrink-0
+        ">
           <VideoCall roomId={roomId} socket={socket} myUserId={userId} userName={userName} />
         </div>
       </main>
