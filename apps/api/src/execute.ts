@@ -17,7 +17,7 @@ export function executeCode(language: string, code: string): Promise<string> {
         break;
       case "java":
         // Write stdin to Main.java, compile, and run
-        dockerArgs = ["run", "--rm", "-i", "openjdk:17-alpine", "sh", "-c", "cat > Main.java && javac Main.java && java Main"];
+        dockerArgs = ["run", "--rm", "-i", "openjdk:27-ea-jdk", "sh", "-c", "cat > Main.java && javac Main.java && java Main"];
         break;
       default:
         return reject(`Language ${language} is not supported.`);
