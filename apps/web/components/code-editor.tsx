@@ -10,9 +10,17 @@ interface CodeEditorProps {
   socket: Socket;
 }
 
+const LANGUAGES = [
+  { value: "javascript", label: "JavaScript", defaultCode: "// Start coding here...\nconsole.log('Hello World!');", ext: "js" },
+  { value: "python", label: "Python", defaultCode: "# Start coding here...\nprint('Hello World!')", ext: "py" },
+  { value: "cpp", label: "C++", defaultCode: "#include <iostream>\n\nint main() {\n    std::cout << \"Hello World!\" << std::endl;\n    return 0;\n}", ext: "cpp" },
+  { value: "java", label: "Java", defaultCode: "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello World!\");\n    }\n}", ext: "java" },
+];
+
 export default function CodeEditor({ roomId, socket }: CodeEditorProps) {
   // --- State Management ---
-  const [code, setCode] = useState("// Start coding here...\nconsole.log('Hello World!');");
+  const [language, setLanguage] = useState(LANGUAGES[0].value);
+  const [code, setCode] = useState(LANGUAGES[0].defaultCode);
   const [output, setOutput] = useState<string[]>([]);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -23,10 +31,6 @@ export default function CodeEditor({ roomId, socket }: CodeEditorProps) {
   useEffect(() => {
     if (!socket) return;
 
-    // Join the specific room (Note: Parent might have already joined, but code-editor specific logic goes here)
-    // Actually, joining room is handled by parent/video-call for presence. 
-    // But for code sync, we just need to listen/emit.
-    
     // Listen for updates from other users
     const handleCodeUpdate = (newCode: string) => {
       console.log("Remote update received");
@@ -57,6 +61,18 @@ export default function CodeEditor({ roomId, socket }: CodeEditorProps) {
     }
   }
 
+  function handleLanguageChange(newLang: string) {
+    setLanguage(newLang);
+    const langObj = LANGUAGES.find((l) => l.value === newLang);
+    if (langObj) {
+      const newCode = langObj.defaultCode;
+      setCode(newCode);
+      // We also might want to emit the language change in the future, 
+      // but for now, we just update the code.
+      socket.emit("code-change", { roomId, code: newCode });
+    }
+  }
+
   // --- 3. Run Code Logic (Docker Integration) ---
   async function runCode() {
     setIsRunning(true);
@@ -67,7 +83,7 @@ export default function CodeEditor({ roomId, socket }: CodeEditorProps) {
       const response = await fetch(`${apiUrl}/execute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, language: "javascript" }),
+        body: JSON.stringify({ code, language }),
       });
 
       const data = await response.json();
@@ -90,20 +106,35 @@ export default function CodeEditor({ roomId, socket }: CodeEditorProps) {
     }
   }
 
+  const currentLangObj = LANGUAGES.find(l => l.value === language) || LANGUAGES[0];
+
   return (
     <div className="flex flex-col h-full gap-4">
 
       {/* --- EDITOR CONTAINER --- */}
       <div className="flex flex-col border border-zinc-700 rounded-lg overflow-hidden shadow-2xl bg-zinc-950">
 
-        {/* Toolbar */}
-        <div className="flex justify-between items-center bg-zinc-900 px-4 py-2 border-b border-zinc-800">
-          <div className="flex items-center gap-2">
-            <span className="text-zinc-400 text-xs font-mono">main.js</span>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800/50 border border-zinc-700 text-[10px] text-zinc-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-              Live
-            </span>
+        {/* Toolbar */}        <div className="flex justify-between items-center bg-zinc-900 px-4 py-2 border-b border-zinc-800">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-400 text-xs font-mono">main.{currentLangObj.ext}</span>
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800/50 border border-zinc-700 text-[10px] text-zinc-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                Live
+              </span>
+            </div>
+            
+            <select
+              value={language}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              className="bg-zinc-800 text-zinc-300 text-xs rounded px-2 py-1 outline-none border border-zinc-700 focus:border-zinc-500 cursor-pointer"
+            >
+              {LANGUAGES.map((lang) => (
+                <option key={lang.value} value={lang.value}>
+                  {lang.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <button
@@ -131,11 +162,10 @@ export default function CodeEditor({ roomId, socket }: CodeEditorProps) {
           </button>
         </div>
 
-        {/* Monaco Editor */}
-        <div className="h-[450px] w-full">
+        {/* Monaco Editor */}        <div className="h-[450px] w-full">
           <Editor
             height="100%"
-            defaultLanguage="javascript"
+            language={language}
             theme="vs-dark"
             value={code}
             onChange={handleEditorChange}
@@ -151,8 +181,7 @@ export default function CodeEditor({ roomId, socket }: CodeEditorProps) {
         </div>
       </div>
 
-      {/* --- TERMINAL OUTPUT --- */}
-      <div className="flex flex-col border border-zinc-800 rounded-lg overflow-hidden bg-black shadow-inner">
+      {/* --- TERMINAL OUTPUT --- */}      <div className="flex flex-col border border-zinc-800 rounded-lg overflow-hidden bg-black shadow-inner">
         <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900/50 border-b border-zinc-800">
           <Terminal className="w-3 h-3 text-zinc-500" />
           <span className="text-xs text-zinc-500 font-medium">Console Output</span>

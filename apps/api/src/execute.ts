@@ -2,8 +2,26 @@ import { spawn } from "child_process";
 
 export function executeCode(language: string, code: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    // We only support javascript for now, using the node image
-    const dockerArgs = ["run", "--rm", "-i", "node:18-alpine", "node"];
+    let dockerArgs: string[] = [];
+
+    switch (language) {
+      case "javascript":
+        dockerArgs = ["run", "--rm", "-i", "node:18-alpine", "node"];
+        break;
+      case "python":
+        dockerArgs = ["run", "--rm", "-i", "python:3-alpine", "python"];
+        break;
+      case "cpp":
+        // Write stdin to main.cpp, compile, and run
+        dockerArgs = ["run", "--rm", "-i", "gcc:11", "sh", "-c", "cat > main.cpp && g++ main.cpp && ./a.out"];
+        break;
+      case "java":
+        // Write stdin to Main.java, compile, and run
+        dockerArgs = ["run", "--rm", "-i", "openjdk:17-alpine", "sh", "-c", "cat > Main.java && javac Main.java && java Main"];
+        break;
+      default:
+        return reject(`Language ${language} is not supported.`);
+    }
 
     const child = spawn("docker", dockerArgs);
 
@@ -29,9 +47,8 @@ export function executeCode(language: string, code: string): Promise<string> {
 
     child.on("close", (code) => {
       if (code !== 0) {
-        // If the process failed, we still want to return the stderr as "output"
-        // for the user to see (e.g., syntax errors)
-        resolve(stderr || "Unknown execution error");
+        // Return stderr or stdout if it failed
+        resolve(stderr || stdout || "Unknown execution error");
       } else {
         resolve(stdout);
       }
